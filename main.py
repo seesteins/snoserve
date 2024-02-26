@@ -1,7 +1,9 @@
 from datetime import datetime, timezone
-from os import environ
+from os import environ, chdir, listdir, path, remove
 from urllib.request import urlretrieve
 from os.path import abspath, dirname, join, isfile
+from shutil import unpack_archive, copyfileobj
+import gzip
 
 class dataDate():
     def __init__(self):
@@ -17,21 +19,35 @@ class data():
         self.dir = directory(self.date)
         self.address = F'https://noaadata.apps.nsidc.org/NOAA/G02158/unmasked/{self.date.year}/{self.date.month}_{self.date.monthAbbrv}/SNODAS_unmasked_{self.date.year}{self.date.month}{self.date.day}.tar'
     def download(self):
-        if not isfile(self.dir.downloadLocation):  #might remove for production
+        if not isfile(self.dir.download):  #might remove for production
             environ["no_proxy"] = "*"
-            print(urlretrieve(self.address, self.dir.downloadLocation))
+            print(urlretrieve(self.address, self.dir.download))
         else:
             print('file already downloaded; proceeding')
-    def unzip(self):
-        pass
-
+    def extractTAR(self):
+        unpack_archive(self.dir.download, self.dir.extract)
+        return self.dir.extract
+    def extractGZ(self):
+        extension = '.gz'
+        chdir(self.dir.extract)
+        for item in listdir(self.dir.extract):
+            if item.endswith(extension):
+                gz_name = path.abspath(item)
+                file_name = (path.basename(gz_name)).rsplit('.',1)[0]
+                with gzip.open(gz_name, 'rb') as f_in, open(file_name, 'wb') as f_out:
+                    copyfileobj(f_in, f_out)
+                remove(gz_name)
+        chdir(self.dir.workingDirectory)
 class directory():
     def __init__(self, date):
         self.workingDirectory = dirname(abspath(__file__))
-        self.name = F'SNODAS-{date.year}{date.month}{date.day}.tar'
-        self.downloadLocation = join(self.workingDirectory, 'data', self.name)
+        self.name = F'SNODAS-{date.year}{date.month}{date.day}'
+        self.download = join(self.workingDirectory, 'data', self.name + '.tar')
+        self.extract = join(self.workingDirectory, 'data', self.name)
 todaysData = data()
 todaysData.download()
+todaysData.extractTAR()
+todaysData.extractGZ()
 
 def check4file(path):
     pass
