@@ -38,6 +38,8 @@ class data():
                     copyfileobj(fileIn, fileOut)
                 remove(nameGZ)
         chdir(self.dir.workingDirectory)
+    def createGTIFF(self):
+        pass
 
 class directory():
     def __init__(self, date):
@@ -45,6 +47,8 @@ class directory():
         self.name = F'SNODAS-{date.year}{date.month}{date.day}'
         self.download = join(self.workingDirectory, 'data', self.name + '.tar')
         self.extract = join(self.workingDirectory, 'data', self.name)
+    def unzippedName(self, extension, zippedFile): #refactor extract GZ in future
+        pass
 todaysData = data()
 todaysData.download()
 todaysData.extractTAR()
