@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from os import environ
 from urllib.request import urlretrieve
-from os.path import abspath, dirname, join
+from os.path import abspath, dirname, join, isfile
 
 class dataDate():
     def __init__(self):
@@ -14,11 +14,14 @@ class dataDate():
 class data():
     def __init__(self):
         self.date = dataDate()
+        self.dir = directory(self.date)
         self.address = F'https://noaadata.apps.nsidc.org/NOAA/G02158/unmasked/{self.date.year}/{self.date.month}_{self.date.monthAbbrv}/SNODAS_unmasked_{self.date.year}{self.date.month}{self.date.day}.tar'
     def download(self):
-        environ["no_proxy"] = "*"
-        print(dirname(abspath(__file__)))
-        #urlretrieve(self.address, self.downloadDirectory)
+        if not isfile(self.dir.downloadLocation):  #might remove for production
+            environ["no_proxy"] = "*"
+            print(urlretrieve(self.address, self.dir.downloadLocation))
+        else:
+            print('file already downloaded; proceeding')
     def unzip(self):
         pass
 
@@ -26,13 +29,12 @@ class directory():
     def __init__(self, date):
         self.workingDirectory = dirname(abspath(__file__))
         self.name = F'SNODAS-{date.year}{date.month}{date.day}.tar'
-        self.downloadLocation = join(self.workingDirectory, self.name)
-testDir = directory(dataDate())
-print (testDir.downloadLocation)
-def downloadSNODAS():
-    #download data from SNODAS
-    return
+        self.downloadLocation = join(self.workingDirectory, 'data', self.name)
+todaysData = data()
+todaysData.download()
 
+def check4file(path):
+    pass
 def waitForDL():
     #wait for file download to finish and then run processing tasks
     #if checkFile true run processing
