@@ -32,12 +32,13 @@ class data():
         chdir(self.dir.extract)
         for item in listdir(self.dir.extract):
             if item.endswith(extension):
-                gz_name = path.abspath(item)
-                file_name = (path.basename(gz_name)).rsplit('.',1)[0]
-                with gzip.open(gz_name, 'rb') as f_in, open(file_name, 'wb') as f_out:
-                    copyfileobj(f_in, f_out)
-                remove(gz_name)
+                nameGZ = path.abspath(item)
+                outputName = (path.basename(nameGZ)).rsplit('.',1)[0]
+                with gzip.open(nameGZ, 'rb') as fileIn, open(outputName, 'wb') as fileOut:
+                    copyfileobj(fileIn, fileOut)
+                remove(nameGZ)
         chdir(self.dir.workingDirectory)
+
 class directory():
     def __init__(self, date):
         self.workingDirectory = dirname(abspath(__file__))
