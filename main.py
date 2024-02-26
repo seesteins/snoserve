@@ -4,6 +4,7 @@ from urllib.request import urlretrieve
 from os.path import abspath, dirname, join, isfile
 from shutil import unpack_archive, copyfileobj
 import gzip
+from osgeo.gdal import Translate, TranslateOptions
 
 class dataDate():
     def __init__(self):
@@ -45,7 +46,7 @@ class GTIFF():
     def __init__(self, txt, dat, hdr):
         self.txt = txt #set .txt file path
         self.dat = dat #set .dat file path
-        self.hdr= hdr
+        self.hdr = hdr
     def readTxt(self):
         self.metadata = {}
         with open(self.txt) as metafile:
@@ -61,7 +62,23 @@ class GTIFF():
         self.envi = '\n'.join(self.envi)
         return self.envi
     def createHDR(self):
-        pass
+        self.stringHDR()
+        with open(self.hdr, "w") as hdr:
+            hdr.write(self.envi)
+        return self.hdr
+    def process(self,dest):
+        minX = float(self.metadata['Minimum x-axis coordinate'])
+        minY = float(self.metadata['Minimum y-axis coordinate'])
+        maxX = float(self.metadata['Maximum x-axis coordinate'])
+        maxY = float(self.metadata['Maximum y-axis coordinate'])
+        a_ullr = [minX, maxY, maxX, minY]
+        kwargs = {
+        'format': 'Gtiff',
+        'outputSRS': 'epsg:4326',
+        'noData' : float(self.metadata['No data value']),
+        'outputBounds': a_ullr
+        }
+        Translate(dest,self.dat,**kwargs)
 
 class directory():
     def __init__(self, date):
@@ -77,10 +94,12 @@ class directory():
         pass
 txt = '/home/tetonicus/programming/SNOServe/data/SNODAS-20240226/zz_ssmv01025SlL00T0024TTNATS2024022605DP001.txt'
 dat = '/home/tetonicus/programming/SNOServe/data/SNODAS-20240226/zz_ssmv01025SlL00T0024TTNATS2024022605DP001.dat'
-someData = GTIFF(txt, dat)
+hdr = '/home/tetonicus/programming/SNOServe/data/SNODAS-20240226/zz_ssmv01025SlL00T0024TTNATS2024022605DP001.hdr'
+dest = '/home/tetonicus/programming/SNOServe/data/SNODAS-20240226/zz_ssmv01025SlL00T0024TTNATS2024022605DP001.tif'
+someData = GTIFF(txt, dat, hdr)
 someData.readTxt()
-someData.stringHDR()
-print(someData.envi)
+someData.createHDR()
+someData.process(dest)
 
 def check4file(path):
     pass
