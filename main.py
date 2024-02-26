@@ -41,18 +41,46 @@ class data():
     def createGTIFF(self):
         pass
 
+class GTIFF():
+    def __init__(self, txt, dat, hdr):
+        self.txt = txt #set .txt file path
+        self.dat = dat #set .dat file path
+        self.hdr= hdr
+    def readTxt(self):
+        self.metadata = {}
+        with open(self.txt) as metafile:
+            for var in metafile:
+                (key, val) = var.rstrip().split(': ')
+                self.metadata[key] = val
+    def stringHDR(self):
+        samples = self.metadata['Number of columns']
+        lines = self.metadata['Number of rows']
+        self.envi = ["ENVI", f"samples = {samples}", f"lines = {lines}", "bands = 1", \
+                     "header offset = 0", "file type = ENVI Standard", "data type = 2", \
+                        "interleave = bsq", "byte order = 1"]
+        self.envi = '\n'.join(self.envi)
+        return self.envi
+    def createHDR(self):
+        pass
+
 class directory():
     def __init__(self, date):
         self.workingDirectory = dirname(abspath(__file__))
         self.name = F'SNODAS-{date.year}{date.month}{date.day}'
-        self.download = join(self.workingDirectory, 'data', self.name + '.tar')
-        self.extract = join(self.workingDirectory, 'data', self.name)
+        self.data = join(self.workingDirectory, 'data')
+        self.download = join(self.data, self.name + '.tar')
+        self.extract = join(self.data, self.name)
+        self.finalData = join(self.data,'processed')
+        self.swe = join(self.finalData, 'swe.gtiff')
+        self.snowDepth = join(self.finalData, 'snow-depth.gtiff')
     def unzippedName(self, extension, zippedFile): #refactor extract GZ in future
         pass
-todaysData = data()
-todaysData.download()
-todaysData.extractTAR()
-todaysData.extractGZ()
+txt = '/home/tetonicus/programming/SNOServe/data/SNODAS-20240226/zz_ssmv01025SlL00T0024TTNATS2024022605DP001.txt'
+dat = '/home/tetonicus/programming/SNOServe/data/SNODAS-20240226/zz_ssmv01025SlL00T0024TTNATS2024022605DP001.dat'
+someData = GTIFF(txt, dat)
+someData.readTxt()
+someData.stringHDR()
+print(someData.envi)
 
 def check4file(path):
     pass
