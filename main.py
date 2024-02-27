@@ -108,6 +108,9 @@ class GTIFF:
         }
         Translate(dest, self.dat, **kwargs)
 
+    def converToInches(self)
+        pass
+    
     def depthStyle(self):
         pass
 
