@@ -108,6 +108,12 @@ class GTIFF:
         }
         Translate(dest, self.dat, **kwargs)
 
+    def depthStyle(self):
+        pass
+
+    def sweStyle(self):
+        pass
+
 
 class directory:
     def __init__(self, date):
@@ -134,6 +140,7 @@ someData = GTIFF(txt, dat, hdr)
 someData.readTxt()
 someData.createHDR()
 someData.process(dest)
+
 
 def createCOG():
     return
