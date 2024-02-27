@@ -1,4 +1,5 @@
 import gzip
+import pathlib
 from datetime import datetime, timezone
 from os import chdir, environ, listdir, path, remove
 from os.path import abspath, dirname, isfile, join
@@ -18,9 +19,10 @@ class dataDate:  # a class to get the time for data download and naming purposes
 
 
 class data:
-    def __init__(self):
-        self.date = dataDate()
+    def __init__(self, date):
+        self.date = date
         self.dir = directory(self.date)
+        self.dir.create()
         self.address = f"https://noaadata.apps.nsidc.org/NOAA/G02158/unmasked/{self.date.year}/{self.date.month}_{self.date.monthAbbrv}/SNODAS_unmasked_{self.date.year}{self.date.month}{self.date.day}.tar"
 
     def download(self):
@@ -108,7 +110,7 @@ class GTIFF:
         }
         Translate(dest, self.dat, **kwargs)
 
-    def converToInches(self)
+    def convertToInches(self):
         pass
     
     def depthStyle(self):
@@ -124,25 +126,27 @@ class directory:
         self.date = f"{date.year}{date.month}{date.day}"
         self.name = f"SNODAS-{self.date}"
         self.data = join(self.workingDirectory, "data")
-        self.tmp = join(self.data, "tmp")
+        self.tmp = join(self.workingDirectory, "tmp")
         self.download = join(self.tmp, self.name + ".tar")
         self.extract = join(self.tmp, self.name)
         self.finalData = join(self.data, self.name)
         self.swe = join(self.finalData, f"swe{self.date}.tif")
         self.snowDepth = join(self.finalData, f"snowdepth{self.date}.tif")
+        self.folders = [self.data, self.tmp, self.finalData, self.extract]
+    
+    def create(self):
+        for folder in self.folders:
+            pathlib.Path(folder).mkdir(parents = True, exist_ok = True)
 
     def unzippedName(self, extension, zippedFile):  # refactor extract GZ in future
         pass
 
 
-txt = "/home/tetonicus/programming/SNOServe/data/SNODAS-20240226/zz_ssmv01025SlL00T0024TTNATS2024022605DP001.txt"
-dat = "/home/tetonicus/programming/SNOServe/data/SNODAS-20240226/zz_ssmv01025SlL00T0024TTNATS2024022605DP001.dat"
-hdr = "/home/tetonicus/programming/SNOServe/data/SNODAS-20240226/zz_ssmv01025SlL00T0024TTNATS2024022605DP001.hdr"
-dest = "/home/tetonicus/programming/SNOServe/data/SNODAS-20240226/zz_ssmv01025SlL00T0024TTNATS2024022605DP001.tif"
-someData = GTIFF(txt, dat, hdr)
-someData.readTxt()
-someData.createHDR()
-someData.process(dest)
+date = dataDate()
+currentData = data(date)
+currentData.download()
+currentData.extractTAR()
+currentData.extractGZ()
 
 
 def createCOG():
