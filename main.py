@@ -26,7 +26,7 @@ class dataDate:  # a class to get the time for data download and naming purposes
         self.monthAbbrv = self.latestData.strftime("%b")
 
 
-class data:
+class data:  # download data and drives the extraction and processing
     def __init__(self, date):
         self.date = date
         self.dir = directory(self.date)
@@ -81,7 +81,7 @@ class data:
         rmtree(self.dir.extract)
 
 
-class GTIFF:
+class GTIFF:  # processes individual geotiff files
     def __init__(self, filename, directory):
         # pass in a dat fill
         self.txt = join(directory.extract, f"{filename}.txt")  # set .txt file path
@@ -143,10 +143,10 @@ class GTIFF:
         check_call(cmd, shell=True)
 
     def convertToInches(self):
-        pass #future work
+        pass  # future work
 
 
-class directory:
+class directory:  # directory manager
     def __init__(self, date):
         self.workingDirectory = dirname(abspath(__file__))
         self.date = f"{date.year}{date.month}{date.day}"
@@ -187,7 +187,7 @@ class directory:
         pass
 
 
-def readTXTvars(txt):
+def readTXTvars(txt):  # reads .txt into a dictionary "key: value\n"
     variables = {}
     with open(txt) as varfile:
         for var in varfile:
@@ -196,7 +196,7 @@ def readTXTvars(txt):
     return variables
 
 
-def stripExtension(file):
+def stripExtension(file):  # strips the first extension from a file
     return (path.basename(file)).rsplit(".", 1)[0]
 
 
