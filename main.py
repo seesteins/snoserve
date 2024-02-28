@@ -1,14 +1,14 @@
 import gzip
 import pathlib
 from datetime import datetime, timedelta
-from pytz import timezone
 from os import chdir, environ, listdir, path, remove
 from os.path import abspath, dirname, isfile, join
-from shutil import copyfileobj, unpack_archive, rmtree
+from shutil import copyfileobj, rmtree, unpack_archive
 from subprocess import check_call
 from urllib.request import urlretrieve
 
-from osgeo.gdal import Translate
+from osgeo.gdal import Translate, TranslateOptions
+from pytz import timezone
 
 
 class dataDate:  # a class to get the time for data download and naming purposes
@@ -76,7 +76,7 @@ class data:
             stripExtension(file) for file in listdir(self.dir.colortables)
         ]:
             tiff.colorize(self.dir)
-    
+
     def cleantemp(self):
         rmtree(self.dir.extract)
 
@@ -120,14 +120,16 @@ class GTIFF:
         maxX = float(self.metadata["Maximum x-axis coordinate"])
         maxY = float(self.metadata["Maximum y-axis coordinate"])
         a_ullr = [minX, maxY, maxX, minY]
-        kwargs = {
-            "format": "Gtiff",
-            "outputSRS": "epsg:4326",
-            "noData": float(self.metadata["No data value"]),
-            "outputBounds": a_ullr,
-        }
+        noData = float(self.metadata["No data value"])
+        options = TranslateOptions(
+            format="Gtiff",
+            outputSRS="epsg:4326",
+            noData=noData,
+            outputBounds=a_ullr,
+            metadataOptions=self.metadata,
+        )
         dest = join(dir.finalData, f"{filename}.tif")
-        Translate(dest, self.dat, **kwargs)
+        Translate(dest, self.dat, options=options)
         self.fullPath = dest
         self.name = filename
 
@@ -141,13 +143,7 @@ class GTIFF:
         check_call(cmd, shell=True)
 
     def convertToInches(self):
-        pass
-
-    def depthStyle(self):
-        pass
-
-    def sweStyle(self):
-        pass
+        pass #future work
 
 
 class directory:
@@ -209,5 +205,5 @@ currentData = data(date)
 currentData.download()
 currentData.extractTAR()
 currentData.extractGZ()
-currentData.createTiffs(True)
+currentData.createTiffs(colorize=True)
 currentData.cleantemp()
