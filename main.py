@@ -200,11 +200,3 @@ currentData.download()
 currentData.extractTAR()
 currentData.extractGZ()
 currentData.createTiffs(True)
-
-
-def createCOG():
-    return
-
-
-def removeTmp():
-    return
