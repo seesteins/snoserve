@@ -33,20 +33,18 @@ class data:  # download data and drives the extraction and processing
         self.dir.create()
         self.address = f"https://noaadata.apps.nsidc.org/NOAA/G02158/unmasked/{self.date.year}/{self.date.month}_{self.date.monthAbbrv}/SNODAS_unmasked_{self.date.year}{self.date.month}{self.date.day}.tar"
 
-    def download(self):
-        # downloads current SNODAS data if not previously downloaded today
+    def download(self):  # downloads current SNODAS data if not existing
         if not isfile(self.dir.download):  # might remove for production
             environ["no_proxy"] = "*"
             print(urlretrieve(self.address, self.dir.download))
         else:
             print("file already downloaded; proceeding")
 
-    def extractTAR(self):
+    def extractTAR(self):  # extract download tar file
         unpack_archive(self.dir.download, self.dir.extract)
         return self.dir.extract
 
-    def extractGZ(self):
-        # extracts all .gz files in a folder and removes the original archives
+    def extractGZ(self):  # extract all .gz files from .tar extraction rm originals
         extension = ".gz"
         chdir(self.dir.extract)
         for item in listdir(self.dir.extract):
@@ -60,7 +58,7 @@ class data:  # download data and drives the extraction and processing
                 remove(nameGZ)
         chdir(self.dir.workingDirectory)
 
-    def createTiffs(self, colorize=False):
+    def createTiffs(self, colorize=False):  # create GTIFFs for all .txt/.dat files
         filenames = self.dir.finalNames
         for item in listdir(self.dir.extract):
             if item.endswith(".txt"):
@@ -70,14 +68,14 @@ class data:  # download data and drives the extraction and processing
                 if colorize:
                     self.colorize(tiff)
 
-    def colorize(self, tiff):
-        # test if input file has a colortable file
+    def colorize(self, tiff):  # colors GTIFF if 'name'.txt is provided in colortables
         if tiff.name in [
             stripExtension(file) for file in listdir(self.dir.colortables)
         ]:
             tiff.colorize(self.dir)
 
-    def cleantemp(self):
+    def cleantemp(self):  # removes extracted files
+        # currently leaves .tar file to prevent DDOSing NOAA
         rmtree(self.dir.extract)
 
 
