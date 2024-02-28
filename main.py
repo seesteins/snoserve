@@ -121,12 +121,12 @@ class GTIFF:
         self.fullPath = dest
         self.name = filename
 
-    def colorize(self, dir, colortxt = None, output_file=None):
+    def colorize(self, dir, colortxt=None, output_file=None):
         # need to call a command in the shell for this to work
         if output_file is None:
             output_file = self.fullPath
         if colortxt is None:
-            colortxt = join(dir.colortables, f'{self.name}.txt')
+            colortxt = join(dir.colortables, f"{self.name}.txt")
         cmd = f"gdaldem color-relief {self.fullPath} {colortxt} {output_file} -alpha"
         check_call(cmd, shell=True)
 
