@@ -1,8 +1,8 @@
-import gzip
-import pathlib
 from datetime import datetime, timedelta
+from gzip import open as gunzip
 from os import chdir, environ, listdir, path, remove
 from os.path import abspath, dirname, isfile, join
+from pathlib import Path
 from shutil import copyfileobj, rmtree, unpack_archive
 from subprocess import check_call
 from urllib.request import urlretrieve
@@ -51,9 +51,7 @@ class data:  # download data and drives the extraction and processing
             if item.endswith(extension):
                 nameGZ = path.abspath(item)
                 outputName = (path.basename(nameGZ)).rsplit(".", 1)[0]
-                with gzip.open(nameGZ, "rb") as fileIn, open(
-                    outputName, "wb"
-                ) as fileOut:
+                with gunzip(nameGZ, "rb") as fileIn, open(outputName, "wb") as fileOut:
                     copyfileobj(fileIn, fileOut)
                 remove(nameGZ)
         chdir(self.dir.workingDirectory)
@@ -170,7 +168,7 @@ class directory:  # directory manager
     def create(self):
         # creates folders for data
         for folder in self.folders:
-            pathlib.Path(folder).mkdir(parents=True, exist_ok=True)
+            Path(folder).mkdir(parents=True, exist_ok=True)
 
     def outputDirs(self):
         # takes the filenames.txt file and creates a dictionary with the locations to
@@ -198,10 +196,15 @@ def stripExtension(file):  # strips the first extension from a file
     return (path.basename(file)).rsplit(".", 1)[0]
 
 
-date = dataDate()
-currentData = data(date)
-currentData.download()
-currentData.extractTAR()
-currentData.extractGZ()
-currentData.createTiffs(colorize=True)
-#currentData.cleantemp()
+def main():
+    date = dataDate()
+    currentData = data(date)
+    currentData.download()
+    currentData.extractTAR()
+    currentData.extractGZ()
+    currentData.createTiffs(colorize=True)
+    currentData.cleantemp()
+
+
+if __name__ == "__main__":
+    main()
