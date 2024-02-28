@@ -1,6 +1,6 @@
 import gzip
 import pathlib
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from os import chdir, environ, listdir, path, remove
 from os.path import abspath, dirname, isfile, join
 from shutil import copyfileobj, unpack_archive
@@ -12,11 +12,17 @@ from osgeo.gdal import Translate
 
 class dataDate:  # a class to get the time for data download and naming purposes
     def __init__(self):
-        self.now = datetime.now(timezone.utc)
-        self.year = self.now.year
-        self.day = self.now.strftime("%d")
-        self.month = self.now.strftime("%m")
-        self.monthAbbrv = self.now.strftime("%b")
+        tz = timezone("US/Eastern")
+        now = datetime.now(tz)
+        releaseTime = now.replace(hour=9, minute=15, second=0, microsecond=0)
+        if now < releaseTime:
+            self.latestData = now - timedelta(days=1)
+        else:
+            self.latestData = now
+        self.year = self.latestData.strftime("%Y")
+        self.day = self.latestData.strftime("%d")
+        self.month = self.latestData.strftime("%m")
+        self.monthAbbrv = self.latestData.strftime("%b")
 
 
 class data:
