@@ -1,9 +1,10 @@
 import gzip
 import pathlib
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
+from pytz import timezone
 from os import chdir, environ, listdir, path, remove
 from os.path import abspath, dirname, isfile, join
-from shutil import copyfileobj, unpack_archive
+from shutil import copyfileobj, unpack_archive, rmtree
 from subprocess import check_call
 from urllib.request import urlretrieve
 
@@ -75,6 +76,9 @@ class data:
             stripExtension(file) for file in listdir(self.dir.colortables)
         ]:
             tiff.colorize(self.dir)
+    
+    def cleantemp(self):
+        rmtree(self.dir.extract)
 
 
 class GTIFF:
@@ -206,3 +210,4 @@ currentData.download()
 currentData.extractTAR()
 currentData.extractGZ()
 currentData.createTiffs(True)
+currentData.cleantemp()
