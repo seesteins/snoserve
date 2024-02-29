@@ -1,12 +1,14 @@
 from datetime import datetime, timedelta
 from gzip import open as gunzip
-from os import chdir, environ, listdir, path, remove
+from os import chdir, environ, getenv, listdir, path, remove
 from os.path import abspath, dirname, isfile, join
 from pathlib import Path
 from shutil import copyfileobj, rmtree, unpack_archive
 from subprocess import check_call
 from urllib.request import urlretrieve
 
+from dotenv import load_dotenv
+from geoserver.catalog import Catalog
 from osgeo.gdal import Translate, TranslateOptions
 from pytz import timezone
 
@@ -56,7 +58,9 @@ class data:  # download data and drives the extraction and processing
                 remove(nameGZ)
         chdir(self.dir.workingDirectory)
 
-    def createTiffs(self, colorize=False):  # create GTIFFs for all .txt/.dat files
+    def createTiffs(
+        self, colorize=False, upload=False
+    ):  # create GTIFFs for all .txt/.dat files
         filenames = self.dir.finalNames
         for item in listdir(self.dir.extract):
             if item.endswith(".txt"):
@@ -65,6 +69,8 @@ class data:  # download data and drives the extraction and processing
                 tiff.process(self.dir, filenames[tiff.metadata["Description"]])
                 if colorize:
                     self.colorize(tiff)
+                if upload:
+                    self.sendToServer(tiff)
 
     def colorize(self, tiff):  # colors GTIFF if 'name'.txt is provided in colortables
         if tiff.name in [
@@ -75,6 +81,9 @@ class data:  # download data and drives the extraction and processing
     def cleantemp(self):  # removes extracted files
         # currently leaves .tar file to prevent DDOSing NOAA
         rmtree(self.dir.extract)
+
+    def sendToServer(self, tiff):
+        server().upload(tiff, self.dir.name)
 
 
 class GTIFF:  # processes individual geotiff files
@@ -164,6 +173,7 @@ class directory:  # directory manager
         ]
         self.filenames = join(self.workingDirectory, "filenames.txt")
         self.finalNames = readTXTvars(self.filenames)
+        self.environment = join(self.workingDirectory, ".env")
 
     def create(self):
         # creates folders for data
@@ -183,6 +193,39 @@ class directory:  # directory manager
         pass
 
 
+class server:
+    def __init__(self):
+        load_dotenv()
+        self.host = getenv("GEOSERVER_ADDRESS")
+        self.username = getenv("GEOSERVER_USERNAME")
+        self.password = getenv("GEOSERVER_PASS")
+        self.geoserver = Catalog(self.host, self.username, self.password)
+        layer = self.geoserver.get_layers()
+        print(layer)
+
+    def uploadProcessed(dir):
+        pass
+
+    def test(self, workspace, path, name):
+        """self.geoserver.create_workspace(workspace=workspace)
+        self.geoserver.create_coveragestore(layer_name=name,path=path,workspace=workspace)
+        """
+        self.geoserver.upload_style(
+            path="/home/tetonicus/programming/SNOServe/styles/depth.sld",
+            workspace=workspace,
+        )
+        self.geoserver.publish_style(
+            layer_name=name, style_name="depth", workspace=workspace
+        )
+
+    def upload(self, TIFF, workspace):
+        layerName = TIFF.name
+        fullPath = TIFF.fullPath
+        print(fullPath)
+        self.geoserver.create_workspace(workspace)
+        self.geoserver.create_coveragestore(layerName, fullPath, workspace)
+
+
 def readTXTvars(txt):  # reads .txt into a dictionary "key: value\n"
     variables = {}
     with open(txt) as varfile:
@@ -197,14 +240,21 @@ def stripExtension(file):  # strips the first extension from a file
 
 
 def main():
+    workspace = "snodastest"
+    path = "/home/tetonicus/programming/SNOServe/data/SNODAS-20240229/depth.tif"
+    name = "depthtest"
+    server()
+
+
+"""     
     date = dataDate()
     currentData = data(date)
     currentData.download()
     currentData.extractTAR()
     currentData.extractGZ()
-    currentData.createTiffs(colorize=True)
+    currentData.createTiffs(upload=True)
     currentData.cleantemp()
-
+ """
 
 if __name__ == "__main__":
     main()
