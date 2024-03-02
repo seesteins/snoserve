@@ -19,13 +19,13 @@ class dataDate:  # a class to get the time for data download and naming purposes
         now = datetime.now(tz)
         releaseTime = now.replace(hour=9, minute=15, second=0, microsecond=0)
         if now < releaseTime:
-            self.latestData = now - timedelta(days=1)
+            self.latest_data = now - timedelta(days=1)
         else:
-            self.latestData = now
-        self.year = self.latestData.strftime("%Y")
-        self.day = self.latestData.strftime("%d")
-        self.month = self.latestData.strftime("%m")
-        self.monthAbbrv = self.latestData.strftime("%b")
+            self.latest_data = now
+        self.year = self.latest_data.strftime("%Y")
+        self.day = self.latest_data.strftime("%d")
+        self.month = self.latest_data.strftime("%m")
+        self.monthAbbrv = self.latest_data.strftime("%b")
 
 
 class data:  # download data and drives the extraction and processing
@@ -64,7 +64,7 @@ class data:  # download data and drives the extraction and processing
         filenames = self.dir.finalNames
         for item in listdir(self.dir.extract):
             if item.endswith(".txt"):
-                tiff = GTIFF(stripExtension(item), self.dir)
+                tiff = GTIFF(strip_extension(item), self.dir)
                 tiff.createHDR()
                 tiff.process(self.dir, filenames[tiff.metadata["Description"]])
                 if colorize:
@@ -74,7 +74,7 @@ class data:  # download data and drives the extraction and processing
 
     def colorize(self, tiff):  # colors GTIFF if 'name'.txt is provided in colortables
         if tiff.name in [
-            stripExtension(file) for file in listdir(self.dir.colortables)
+            strip_extension(file) for file in listdir(self.dir.colortables)
         ]:
             tiff.colorize(self.dir)
 
@@ -92,7 +92,7 @@ class GTIFF:  # processes individual geotiff files
         self.txt = join(directory.extract, f"{filename}.txt")  # set .txt file path
         self.dat = join(directory.extract, f"{filename}.dat")  # set .dat file path
         self.hdr = join(directory.extract, f"{filename}.hdr")
-        self.metadata = readTXTvars(self.txt)
+        self.metadata = read_txt_vars(self.txt)
 
     def stringHDR(self):
         # creates the text of the .hdr file - might be able to use this without an
@@ -172,7 +172,7 @@ class directory:  # directory manager
             self.colortables,
         ]
         self.filenames = join(self.workingDirectory, "filenames.txt")
-        self.finalNames = readTXTvars(self.filenames)
+        self.finalNames = read_txt_vars(self.filenames)
         self.environment = join(self.workingDirectory, ".env")
 
     def create(self):
@@ -183,7 +183,7 @@ class directory:  # directory manager
     def outputDirs(self):
         # takes the filenames.txt file and creates a dictionary with the locations to
         # to save processed data
-        self.finalNames = readTXTvars(self.filenames)
+        self.finalNames = read_txt_vars(self.filenames)
         self.outputPaths = {}
         for key in self.finalNames:
             self.outputPaths[key] = join(self.finalData, f"{self.finalNames[key]}.tif")
@@ -196,37 +196,59 @@ class directory:  # directory manager
 class server:
     def __init__(self):
         load_dotenv()
-        self.host = getenv("GEOSERVER_ADDRESS")
-        self.username = getenv("GEOSERVER_USERNAME")
-        self.password = getenv("GEOSERVER_PASS")
-        self.geoserver = Catalog(self.host, self.username, self.password)
-        layer = self.geoserver.get_layers()
-        print(layer)
+        self.HOST = getenv("GEOSERVER_ADDRESS")
+        self.USERNAME = getenv("GEOSERVER_USERNAME")
+        self.PASSWORD = getenv("GEOSERVER_PASS")
+        self.geoserver = Catalog(self.HOST, self.USERNAME, self.PASSWORD)
+        self.geoserver
 
-    def uploadProcessed(dir):
-        pass
-
-    def test(self, workspace, path, name):
-        """self.geoserver.create_workspace(workspace=workspace)
-        self.geoserver.create_coveragestore(layer_name=name,path=path,workspace=workspace)
-        """
-        self.geoserver.upload_style(
-            path="/home/tetonicus/programming/SNOServe/styles/depth.sld",
-            workspace=workspace,
-        )
-        self.geoserver.publish_style(
-            layer_name=name, style_name="depth", workspace=workspace
+    def upload_data(self, data_name, workspace, local_path):
+        return self.geoserver.create_coveragestore(
+            data_name, workspace=workspace, path=local_path, upload_data=True
         )
 
-    def upload(self, TIFF, workspace):
-        layerName = TIFF.name
-        fullPath = TIFF.fullPath
-        print(fullPath)
-        self.geoserver.create_workspace(workspace)
-        self.geoserver.create_coveragestore(layerName, fullPath, workspace)
+    def style_data(self, layer_name, style_name):
+        layer = self.geoserver.get_layer(layer_name)
+        return layer.default_style(style_name)
+
+    def upload_folder(self, workspace, folder_path):
+        for data in listdir(folder_path):
+            if data.endswith(".tif"):
+                data_path = path.abspath(data)
+                name = (path.basename(data)).rsplit(".", 1)[0]
+                self.upload_data(name, workspace, data_path)
+
+    def delete_data(self, data_name, workspace):
+        store = self.geoserver.get_store(name=data_name, workspace=workspace)
+        return self.geoserver.delete(store, purge=True, recurse=True)
+
+    def upload_style(self, style):
+        with open(style) as file:
+            self.geoserver.create_style(
+                strip_extension(path.basename(style)), file.read()
+            )
+
+    def delete_old_data(self, date, days):
+        stores = self.get_all_data()
+        for store in stores:
+            if store["date"] < date.latest_data - timedelta(days):
+                self.geoserver.delete(store["obj"], purge=True, recurse=True)
+
+    def get_all_data(self):
+        all_stores = self.geoserver.get_stores()
+        stores = []
+        for store in all_stores:
+            stores.append(
+                {
+                    "name": store.name,
+                    "date": datetime_from_str(store.name.split("_")[1]),
+                    "obj": store,
+                }
+            )
+        return stores
 
 
-def readTXTvars(txt):  # reads .txt into a dictionary "key: value\n"
+def read_txt_vars(txt):  # reads .txt into a dictionary "key: value\n"
     variables = {}
     with open(txt) as varfile:
         for var in varfile:
@@ -235,15 +257,23 @@ def readTXTvars(txt):  # reads .txt into a dictionary "key: value\n"
     return variables
 
 
-def stripExtension(file):  # strips the first extension from a file
+def strip_extension(file):  # strips the first extension from a file
     return (path.basename(file)).rsplit(".", 1)[0]
 
 
+def datetime_from_str(string):
+    tz = timezone("US/Eastern")
+    date = datetime.strptime(string, "%Y%m%d").replace(tzinfo=tz)
+    return date
+
+
 def main():
-    workspace = "snodastest"
-    path = "/home/tetonicus/programming/SNOServe/data/SNODAS-20240229/depth.tif"
-    name = "depthtest"
-    server()
+    workspace = "SNODAS"
+    path = "/home/tetonicus/programming/SNOServe/data/SNODAS-20240229/snowdepth.tif"
+    name = "snowdepth_20240228"
+    serve = server()
+    date = dataDate()
+    serve.delete_old_data(date, 1)
 
 
 """     
