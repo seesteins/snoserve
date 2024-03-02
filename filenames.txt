@@ -1,8 +1,8 @@
-Modeled snowpack sublimation, 24-hour total: snowpack_sub
+Modeled snowpack sublimation, 24-hour total: snowpacksub
 Modeled melt, bottom of snow layers, 24-hour total: melt
-Modeled blowing snow sublimation, 24-hour total: blowing_sub
+Modeled blowing snow sublimation, 24-hour total: blowingsub
 Modeled average temperature, SWE-weighted average of snow layers, 24-hour average: temp
 Modeled snow layer thickness, total of snow layers: snowdepth
 Modeled snow water equivalent, total of snow layers: swe
-Scaled Snow accumulation, 24-hour total: precip_snow
-Scaled Non-snow accumulation, 24-hour total: precip_rain
+Scaled Snow accumulation, 24-hour total: precipsnow
+Scaled Non-snow accumulation, 24-hour total: preciprain

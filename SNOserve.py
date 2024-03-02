@@ -25,6 +25,7 @@ class dataDate:  # a class to get the time for data download and naming purposes
         self.year = self.latest_data.strftime("%Y")
         self.day = self.latest_data.strftime("%d")
         self.month = self.latest_data.strftime("%m")
+        self.date_string = f"{self.year}{self.month}{self.day}"
         self.monthAbbrv = self.latest_data.strftime("%b")
 
 
@@ -66,7 +67,9 @@ class data:  # download data and drives the extraction and processing
             if item.endswith(".txt"):
                 tiff = GTIFF(strip_extension(item), self.dir)
                 tiff.createHDR()
-                tiff.process(self.dir, filenames[tiff.metadata["Description"]])
+                type_name = filenames[tiff.metadata["Description"]]
+                filename = f"{type_name}_{self.date.date_string}"
+                tiff.process(self.dir, filename)
                 if colorize:
                     self.colorize(tiff)
                 if upload:
@@ -209,12 +212,34 @@ class server:
 
     def style_data(self, layer_name, style_name):
         layer = self.geoserver.get_layer(layer_name)
-        return layer.default_style(style_name)
+        # Insert your style here.  Originally, we used some logic here to set the style based on the layer name.  Feel free to replace with whatever works best for you.
+        """style = (
+            "<layer><defaultStyle><name>"
+            + styleToUse
+            + "</name></defaultStyle></layer>"
+        )"""
+        style = f"<layer><defaultStyle><name>{style_name}</name></defaultStyle></layer>"
+        # Actually make the call to set the default style.  For debugging purposes, you may wish to add
+        # the -v (verbose) flag.
+        cmd = f'curl -u {self.USERNAME}:{self.PASSWORD} -XPUT -H "Content-type: text/xml" -d {style} {self.HOST}/layers/SNODAS:{layer_name}.html'
+        """curlString = (
+            "curl -u "
+            + self.USERNAME
+            + ":"
+            + geoserver_password
+            + ' -XPUT -H "Content-type: text/xml" -d "'
+            + style
+            + '" '
+            + geoserver_url
+            + "/rest/layers/"
+            + layer.name
+        )"""
+        check_call(cmd)
 
     def upload_folder(self, workspace, folder_path):
         for data in listdir(folder_path):
             if data.endswith(".tif"):
-                data_path = path.abspath(data)
+                data_path = join(folder_path, data)
                 name = (path.basename(data)).rsplit(".", 1)[0]
                 self.upload_data(name, workspace, data_path)
 
@@ -241,11 +266,18 @@ class server:
             stores.append(
                 {
                     "name": store.name,
-                    "date": datetime_from_str(store.name.split("_")[1]),
+                    "date": datetime_from_str(store.name.split("_")[-1]),
                     "obj": store,
                 }
             )
         return stores
+
+    def style_types(self, types_list):
+        for store in self.get_all_data():
+            data_type = store["name"].split("_")[0]
+            if data_type in types_list:
+                print(store["name"], data_type)
+                self.style_data(store["name"], data_type)
 
 
 def read_txt_vars(txt):  # reads .txt into a dictionary "key: value\n"
@@ -268,14 +300,23 @@ def datetime_from_str(string):
 
 
 def main():
-    workspace = "SNODAS"
-    path = "/home/tetonicus/programming/SNOServe/data/SNODAS-20240229/snowdepth.tif"
-    name = "snowdepth_20240228"
-    serve = server()
-    date = dataDate()
-    serve.delete_old_data(date, 1)
+    verty = server()
+    verty.style_types(["snowdepth"])
 
 
+"""     date = dataDate()
+    current_data = data(date)
+    current_data.download()
+    current_data.extractTAR()
+    current_data.extractGZ()
+    current_data.createTiffs()
+    current_data.cleantemp()
+    verty = server() 
+    verty.upload_folder('SNODAS', current_data.dir.finalData)
+    verty.delete_old_data(date, 3) 
+    verty.style_types(['snowdepth'])
+
+ """
 """     
     date = dataDate()
     currentData = data(date)
