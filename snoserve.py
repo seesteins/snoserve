@@ -91,7 +91,7 @@ class file:  # download data and drives the extraction and processing
 
 class GTIFF:  # processes individual geotiff files
     def __init__(self, filename, directory):
-        # pass in a dat fill
+        # pass in a filename and directory object
         self.txt = join(directory.extract, f"{filename}.txt")  # set .txt file path
         self.dat = join(directory.extract, f"{filename}.dat")  # set .dat file path
         self.hdr = join(directory.extract, f"{filename}.hdr")
