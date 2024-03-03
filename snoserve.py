@@ -59,9 +59,7 @@ class file:  # download data and drives the extraction and processing
                 remove(nameGZ)
         chdir(self.dir.workingDirectory)
 
-    def createTiffs(
-        self, colorize=False
-    ):  # create GTIFFs for all .txt/.dat files
+    def createTiffs(self, colorize=False):  # create GTIFFs for all .txt/.dat files
         filenames = self.dir.finalNames
         for item in listdir(self.dir.extract):
             if item.endswith(".txt"):
@@ -238,14 +236,14 @@ class server:
             )
 
     def delete_old_data(self, date, days):
-        #no longer following this naming convention
+        # no longer following this naming convention
         stores = self.get_all_data()
         for store in stores:
             if store["date"] < date.latest_data - timedelta(days):
                 self.geoserver.delete(store["obj"], purge=True, recurse=True)
 
     def get_all_data_dates(self):
-        #no longer using this data format
+        # no longer using this data format
         all_stores = self.geoserver.get_stores()
         stores = []
         for store in all_stores:
@@ -264,9 +262,9 @@ class server:
             data_type = store.name
             if data_type in types_list:
                 self.style_data(store.name, data_type)
-    
+
     def selective_upload(self, workspace, folder_path, selection):
-        selection = [f'{file}.tif' for file in selection]
+        selection = [f"{file}.tif" for file in selection]
         for file in listdir(folder_path):
             if file in selection:
                 data_path = join(folder_path, file)
@@ -302,8 +300,8 @@ def main():
     current_data.createTiffs()
     current_data.cleantemp()
     verty = server()
-    verty.selective_upload("SNODAS", current_data.dir.finalData, ['snowdepth', 'swe'])
-    verty.style_types(["snowdepth"])
+    verty.selective_upload("SNODAS", current_data.dir.finalData, ["snowdepth", "swe"])
+    verty.style_types(["snowdepth", "swe"])
 
 
 if __name__ == "__main__":
