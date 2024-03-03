@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timedelta
 from gzip import open as gunzip
 from os import chdir, environ, getenv, listdir, path, remove
@@ -212,29 +213,9 @@ class server:
 
     def style_data(self, layer_name, style_name):
         layer = self.geoserver.get_layer(layer_name)
-        # Insert your style here.  Originally, we used some logic here to set the style based on the layer name.  Feel free to replace with whatever works best for you.
-        """style = (
-            "<layer><defaultStyle><name>"
-            + styleToUse
-            + "</name></defaultStyle></layer>"
-        )"""
         style = f"<layer><defaultStyle><name>{style_name}</name></defaultStyle></layer>"
-        # Actually make the call to set the default style.  For debugging purposes, you may wish to add
-        # the -v (verbose) flag.
-        cmd = f'curl -u {self.USERNAME}:{self.PASSWORD} -XPUT -H "Content-type: text/xml" -d {style} {self.HOST}/layers/SNODAS:{layer_name}.html'
-        """curlString = (
-            "curl -u "
-            + self.USERNAME
-            + ":"
-            + geoserver_password
-            + ' -XPUT -H "Content-type: text/xml" -d "'
-            + style
-            + '" '
-            + geoserver_url
-            + "/rest/layers/"
-            + layer.name
-        )"""
-        check_call(cmd)
+        cmd = f'curl -u {self.USERNAME}:{self.PASSWORD} -XPUT -H "Content-type: text/xml" -d "{style}" {self.HOST}/layers/SNODAS:{layer.name}'
+        os.system(cmd)
 
     def upload_folder(self, workspace, folder_path):
         for data in listdir(folder_path):
@@ -300,32 +281,18 @@ def datetime_from_str(string):
 
 
 def main():
-    verty = server()
-    verty.style_types(["snowdepth"])
-
-
-"""     date = dataDate()
+    date = dataDate()
     current_data = data(date)
     current_data.download()
     current_data.extractTAR()
     current_data.extractGZ()
     current_data.createTiffs()
     current_data.cleantemp()
-    verty = server() 
-    verty.upload_folder('SNODAS', current_data.dir.finalData)
-    verty.delete_old_data(date, 3) 
-    verty.style_types(['snowdepth'])
+    verty = server()
+    verty.upload_folder("SNODAS", current_data.dir.finalData)
+    verty.delete_old_data(date, 3)
+    verty.style_types(["snowdepth"])
 
- """
-"""     
-    date = dataDate()
-    currentData = data(date)
-    currentData.download()
-    currentData.extractTAR()
-    currentData.extractGZ()
-    currentData.createTiffs(upload=True)
-    currentData.cleantemp()
- """
 
 if __name__ == "__main__":
     main()
