@@ -1,7 +1,6 @@
-import os
 from datetime import datetime, timedelta
 from gzip import open as gunzip
-from os import chdir, environ, getenv, listdir, path, remove
+from os import chdir, environ, getenv, listdir, path, remove, system
 from os.path import abspath, dirname, isfile, join
 from pathlib import Path
 from shutil import copyfileobj, rmtree, unpack_archive
@@ -30,7 +29,7 @@ class dataDate:  # a class to get the time for data download and naming purposes
         self.monthAbbrv = self.latest_data.strftime("%b")
 
 
-class data:  # download data and drives the extraction and processing
+class file:  # download data and drives the extraction and processing
     def __init__(self, date):
         self.date = date
         self.dir = directory(self.date)
@@ -61,20 +60,17 @@ class data:  # download data and drives the extraction and processing
         chdir(self.dir.workingDirectory)
 
     def createTiffs(
-        self, colorize=False, upload=False
+        self, colorize=False
     ):  # create GTIFFs for all .txt/.dat files
         filenames = self.dir.finalNames
         for item in listdir(self.dir.extract):
             if item.endswith(".txt"):
                 tiff = GTIFF(strip_extension(item), self.dir)
                 tiff.createHDR()
-                type_name = filenames[tiff.metadata["Description"]]
-                filename = f"{type_name}_{self.date.date_string}"
+                filename = filenames[tiff.metadata["Description"]]
                 tiff.process(self.dir, filename)
                 if colorize:
                     self.colorize(tiff)
-                if upload:
-                    self.sendToServer(tiff)
 
     def colorize(self, tiff):  # colors GTIFF if 'name'.txt is provided in colortables
         if tiff.name in [
@@ -86,8 +82,11 @@ class data:  # download data and drives the extraction and processing
         # currently leaves .tar file to prevent DDOSing NOAA
         rmtree(self.dir.extract)
 
-    def sendToServer(self, tiff):
-        server().upload(tiff, self.dir.name)
+    def clean_old_tar(self):
+        pass
+
+    def clean_old_data(self):
+        pass
 
 
 class GTIFF:  # processes individual geotiff files
@@ -208,14 +207,18 @@ class server:
 
     def upload_data(self, data_name, workspace, local_path):
         return self.geoserver.create_coveragestore(
-            data_name, workspace=workspace, path=local_path, upload_data=True
+            data_name,
+            workspace=workspace,
+            path=local_path,
+            upload_data=True,
+            overwrite=True,
         )
 
     def style_data(self, layer_name, style_name):
         layer = self.geoserver.get_layer(layer_name)
         style = f"<layer><defaultStyle><name>{style_name}</name></defaultStyle></layer>"
         cmd = f'curl -u {self.USERNAME}:{self.PASSWORD} -XPUT -H "Content-type: text/xml" -d "{style}" {self.HOST}/layers/SNODAS:{layer.name}'
-        os.system(cmd)
+        system(cmd)
 
     def upload_folder(self, workspace, folder_path):
         for data in listdir(folder_path):
@@ -235,12 +238,14 @@ class server:
             )
 
     def delete_old_data(self, date, days):
+        #no longer following this naming convention
         stores = self.get_all_data()
         for store in stores:
             if store["date"] < date.latest_data - timedelta(days):
                 self.geoserver.delete(store["obj"], purge=True, recurse=True)
 
-    def get_all_data(self):
+    def get_all_data_dates(self):
+        #no longer using this data format
         all_stores = self.geoserver.get_stores()
         stores = []
         for store in all_stores:
@@ -254,11 +259,19 @@ class server:
         return stores
 
     def style_types(self, types_list):
-        for store in self.get_all_data():
-            data_type = store["name"].split("_")[0]
+        stores = self.geoserver.get_stores()
+        for store in stores:
+            data_type = store.name
             if data_type in types_list:
-                print(store["name"], data_type)
-                self.style_data(store["name"], data_type)
+                self.style_data(store.name, data_type)
+    
+    def selective_upload(self, workspace, folder_path, selection):
+        selection = [f'{file}.tif' for file in selection]
+        for file in listdir(folder_path):
+            if file in selection:
+                data_path = join(folder_path, file)
+                name = (path.basename(file)).rsplit(".", 1)[0]
+                self.upload_data(name, workspace, data_path)
 
 
 def read_txt_vars(txt):  # reads .txt into a dictionary "key: value\n"
@@ -282,15 +295,14 @@ def datetime_from_str(string):
 
 def main():
     date = dataDate()
-    current_data = data(date)
+    current_data = file(date)
     current_data.download()
     current_data.extractTAR()
     current_data.extractGZ()
     current_data.createTiffs()
     current_data.cleantemp()
     verty = server()
-    verty.upload_folder("SNODAS", current_data.dir.finalData)
-    verty.delete_old_data(date, 3)
+    verty.selective_upload("SNODAS", current_data.dir.finalData, ['snowdepth', 'swe'])
     verty.style_types(["snowdepth"])
 
 
