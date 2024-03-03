@@ -1,2 +1,4 @@
 GDAL==3.4.1
+gsconfig==1.0.10
+python-dotenv==1.0.1
 pytz==2022.1
