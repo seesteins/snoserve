@@ -59,7 +59,22 @@ class file:  # download data and drives the extraction and processing
                 remove(nameGZ)
         chdir(self.dir.workingDirectory)
 
-    def createTiffs(self, colorize=False):  # create GTIFFs for all .txt/.dat files
+    def createTiffs(self, colorize=False):
+        """
+        Creates GeoTIFF files from the extracted .txt and .dat files.
+
+        Args:
+            colorize (bool, optional): If True, applies color relief to the generated GeoTIFF files using the corresponding color table files. Defaults to False.
+
+        This method iterates through the extracted files in the `self.dir.extract` directory.
+        For each file with a `.txt` extension, it performs the following steps:
+
+        1. Creates a `GTIFF` object with the file name and directory object.
+        2. Generates a `.hdr` file for the GeoTIFF using the `GTIFF.createHDR()` method.
+        3. Retrieves the output file name from the `self.dir.finalNames` dictionary based on the 'Description' metadata.
+        4. Processes the `.dat` file and generates a GeoTIFF file in the `self.dir.finalData` directory using the `GTIFF.process()` method.
+        5. If `colorize` is True, applies color relief to the generated GeoTIFF file using the `self.colorize()` method.
+        """
         filenames = self.dir.finalNames
         for item in listdir(self.dir.extract):
             if item.endswith(".txt"):
