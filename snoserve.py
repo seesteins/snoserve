@@ -30,9 +30,9 @@ class dataDate:  # a class to get the time for data download and naming purposes
 
 
 class file:  # download data and drives the extraction and processing
-    def __init__(self, date):
+    def __init__(self, date, directory):
         self.date = date
-        self.dir = directory(self.date)
+        self.dir = directory
         self.dir.create()
         self.address = f"https://noaadata.apps.nsidc.org/NOAA/G02158/unmasked/{self.date.year}/{self.date.month}_{self.date.monthAbbrv}/SNODAS_unmasked_{self.date.year}{self.date.month}{self.date.day}.tar"
 
@@ -230,6 +230,26 @@ class server:
         )
 
     def style_data(self, layer_name, style_name):
+        """
+        Styles a GeoServer layer with the specified style.
+
+        This method first checks if the specified style exists in the GeoServer instance.
+        If the style does not exist, it uploads the style using the `upload_style` method.
+        Then, it retrieves the layer object from the GeoServer instance using the provided
+        `layer_name`. It constructs an XML string with the `style_name` to be set as the
+        default style for the layer.
+
+        Finally, it sends a PUT request to the GeoServer REST API using cURL to set the
+        default style for the layer.
+
+        Args:
+            layer_name (str): The name of the layer to be styled.
+            style_name (str): The name of the style to be applied to the layer.
+        """
+        if self.geoserver.get_style(name=style_name) is None:
+            print("Style does not exist, uploading new style")
+            self.upload_style(style_name)
+
         layer = self.geoserver.get_layer(layer_name)
         style = f"<layer><defaultStyle><name>{style_name}</name></defaultStyle></layer>"
         cmd = f'curl -u {self.USERNAME}:{self.PASSWORD} -XPUT -H "Content-type: text/xml" -d "{style}" {self.HOST}/layers/SNODAS:{layer.name}'
@@ -274,28 +294,6 @@ class server:
         else:
             raise Exception(f"Style {style} not found in styles folder.")
 
-
-    def delete_old_data(self, date, days):
-        # no longer following this naming convention
-        stores = self.get_all_data()
-        for store in stores:
-            if store["date"] < date.latest_data - timedelta(days):
-                self.geoserver.delete(store["obj"], purge=True, recurse=True)
-
-    def get_all_data_dates(self):
-        # no longer using this data format
-        all_stores = self.geoserver.get_stores()
-        stores = []
-        for store in all_stores:
-            stores.append(
-                {
-                    "name": store.name,
-                    "date": datetime_from_str(store.name.split("_")[-1]),
-                    "obj": store,
-                }
-            )
-        return stores
-
     def style_types(self, types_list):
         stores = self.geoserver.get_stores()
         for store in stores:
@@ -334,7 +332,7 @@ def datetime_from_str(string):
 def main():
     date = dataDate()
     dir = directory(date)
-    current_data = file(date)
+    current_data = file(date, dir)
     current_data.download()
     current_data.extractTAR()
     current_data.extractGZ()
