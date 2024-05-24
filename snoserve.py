@@ -179,13 +179,14 @@ class directory:  # directory manager
         self.finalData = join(self.data, self.name)
         self.swe = join(self.finalData, f"swe{self.date}.tif")
         self.snowDepth = join(self.finalData, f"snowdepth{self.date}.tif")
-        self.colortables = join(self.workingDirectory, "colortables")
+        # self.colortables = join(self.workingDirectory, "colortables")
+        self.styles = join(self.workingDirectory, "styles")
         self.folders = [
             self.data,
             self.tmp,
             self.finalData,
             self.extract,
-            self.colortables,
+            self.styles,
         ]
         self.filenames = join(self.workingDirectory, "filenames.txt")
         self.finalNames = read_txt_vars(self.filenames)
@@ -210,7 +211,8 @@ class directory:  # directory manager
 
 
 class server:
-    def __init__(self):
+    def __init__(self, directory):
+        self.directory = directory
         load_dotenv()
         self.HOST = getenv("GEOSERVER_ADDRESS")
         self.USERNAME = getenv("GEOSERVER_USERNAME")
@@ -245,10 +247,33 @@ class server:
         return self.geoserver.delete(store, purge=True, recurse=True)
 
     def upload_style(self, style):
-        with open(style) as file:
-            self.geoserver.create_style(
-                strip_extension(path.basename(style)), file.read()
-            )
+        """
+        Uploads a specified style to the GeoServer instance.
+
+        This method checks if the specified style file exists in the styles folder
+        of the current directory object. If the style file is found, it reads the
+        file and creates a new style in the GeoServer instance with the content
+        of the file.
+
+        Args:
+            style (str): The name of the style to be uploaded.
+
+        Raises:
+            Exception: If the specified style file is not found in the styles folder.
+        """
+        style_files = listdir(self.directory.styles)
+        available_styles = [
+            strip_extension(path.basename(file)) for file in style_files
+        ]
+        if style in available_styles:
+            style_file = join(self.directory.styles, f"{style}.sld")
+            with open(style_file) as file:
+                self.geoserver.create_style(
+                    strip_extension(path.basename(style)), file.read()
+                )
+        else:
+            raise Exception(f"Style {style} not found in styles folder.")
+
 
     def delete_old_data(self, date, days):
         # no longer following this naming convention
@@ -308,13 +333,14 @@ def datetime_from_str(string):
 
 def main():
     date = dataDate()
+    dir = directory(date)
     current_data = file(date)
     current_data.download()
     current_data.extractTAR()
     current_data.extractGZ()
     current_data.createTiffs()
     current_data.cleantemp()
-    verty = server()
+    verty = server(dir)
     verty.selective_upload("SNODAS", current_data.dir.finalData, ["snowdepth", "swe"])
     verty.style_types(["snowdepth", "swe"])
 
