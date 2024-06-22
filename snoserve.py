@@ -394,7 +394,7 @@ class server:
         default style for the layer.
 
         As far as I can tell there is no way to set a default style for a layer using the
-        geserver-restconfig module.
+        geoserver-restconfig module.
 
         Args:
             layer_name (str): The name of the layer to be styled.
