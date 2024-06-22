@@ -1,4 +1,4 @@
-GDAL==3.4.1
+GDAL==3.6.2
 gsconfig==1.0.10
 python-dotenv==1.0.1
-pytz==2022.1
+pytz==2024.1
