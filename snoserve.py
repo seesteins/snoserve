@@ -7,7 +7,6 @@ from shutil import copyfileobj, rmtree, unpack_archive
 from subprocess import check_call
 from urllib.request import urlretrieve
 
-from dotenv import load_dotenv
 from geoserver.catalog import Catalog
 from osgeo.gdal import Translate, TranslateOptions
 from pytz import timezone
@@ -213,8 +212,7 @@ class directory:  # directory manager
 class server:
     def __init__(self, directory):
         self.directory = directory
-        load_dotenv()
-        self.HOST = getenv("GEOSERVER_ADDRESS")
+        self.HOST =getenv("GEOSERVER_ADDRESS")
         self.USERNAME = getenv("GEOSERVER_USERNAME")
         self.PASSWORD = getenv("GEOSERVER_PASS")
         self.geoserver = Catalog(self.HOST, self.USERNAME, self.PASSWORD)

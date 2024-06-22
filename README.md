@@ -13,7 +13,7 @@ Be sure to follow the post installation steps: https://docs.docker.com/engine/in
 #### Setup
 ##### Git clone the docker-snoserve repository 
 ```
-git clone https://github.com/seesteins/docker-snoserve.git
+git clone --recursive https://github.com/seesteins/docker-snoserve.git
 cd docker-snoserve
 ```
 ##### Create a .env
