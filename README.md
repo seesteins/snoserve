@@ -22,6 +22,9 @@ Create your .env file with your geoserver information
 cp example.env .env
 nano .env
 ```
+##### Add a workspace to your Geoserver instance
+Add a workspace to your geoserver with a name and namespace of "SNODAS"
+This is future work and a step to be removed.
 ##### Start docker-snoserve
 Pull and setup a snoserve docker container. Snoserve will run once and then exit
 ```
